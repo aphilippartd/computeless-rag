@@ -428,7 +428,7 @@ Now that we have "private" data stored in our Pinecone index, we are able to que
 
 In order to remove the AWS resources created in this tutorial, just run the followin command: `sam delete`
 
-6. Conclusion 🌅
+## 6. Conclusion 🌅
    
 The journey through the development of the Computeless RAG tool has showcased how seamlessly serverless architectures can integrate with generative AI to handle complex queries directly from private datasets by leveraging AWS AppSync, Amazon Bedrock and Pinecone.
 
