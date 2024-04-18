@@ -1,0 +1,6 @@
+
+type QueryOutput { output: String! }
+type Query { rag(query: String!): QueryOutput }
+
+type MutationOutput { output: Boolean! }
+type Mutation { embedContext(query: String!): MutationOutput }

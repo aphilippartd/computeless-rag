@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Computeless Rag
+
+Resources:
+##########################################################################
+#   AppSync API                                                          #
+##########################################################################
+  ComputelessRagApi:
+    Type: AWS::Serverless::GraphQLApi
+    Properties:
+      SchemaUri: ./schema.graphql
+      ApiKeys:
+        TestApiKey:
+          Description: Test Api Key
+      Auth:
+        Type: API_KEY
+      Functions:
+        getPineconeApiKeyFunction:
+          Runtime: 
+            Name: APPSYNC_JS
+            Version: 1.0.0
+          DataSource: !GetAtt SecretsManagerDataSource.Name
+          CodeUri: ./api/resolvers/functions/getPineconeApiKeyFunction.js
+        generateEmbeddingFunction:
+          Runtime: 
+            Name: APPSYNC_JS
+            Version: 1.0.0
+          DataSource: !GetAtt BedrockDataSource.Name
+          CodeUri: ./api/resolvers/functions/generateEmbeddingFunction.js
+        searchEmbeddingsFunction:
+          Runtime: 
+            Name: APPSYNC_JS
+            Version: 1.0.0
+          DataSource: !GetAtt PineconeDataSource.Name
+          CodeUri: ./api/resolvers/functions/searchEmbeddingsFunction.js
+        buildPromptFunction:
+          Runtime: 
+            Name: APPSYNC_JS
+            Version: 1.0.0
+          DataSource: None
+          CodeUri: ./api/resolvers/functions/buildPromptFunction.js
+        invokeModelFunction:
+          Runtime: 
+            Name: APPSYNC_JS
+            Version: 1.0.0
+          DataSource: !GetAtt BedrockDataSource.Name
+          CodeUri: ./api/resolvers/functions/invokeModelFunction.js
+        storeEmbeddingFunction:
+          Runtime: 
+            Name: APPSYNC_JS
+            Version: 1.0.0
+          DataSource: !GetAtt PineconeDataSource.Name
+          CodeUri: ./api/resolvers/functions/storeEmbeddingFunction.js
+
+
+      Resolvers:
+        Query:
+          rag:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            CodeUri: ./api/resolvers/ragResolver.js
+            Pipeline:
+            - getPineconeApiKeyFunction
+            - generateEmbeddingFunction
+            - searchEmbeddingsFunction
+            - buildPromptFunction
+            - invokeModelFunction
+        Mutation:
+          embedContext:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            CodeUri: ./api/resolvers/embedContextResolver.js
+            Pipeline:
+            - getPineconeApiKeyFunction
+            - generateEmbeddingFunction
+            - storeEmbeddingFunction
+
+##########################################################################
+#   AppSync Data Sources                                                 #
+##########################################################################
+  BedrockDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt ComputelessRagApi.ApiId
+      Name: BedrockDataSource
+      Type: HTTP
+      ServiceRoleArn: !GetAtt BedrockDataSourceRole.Arn
+      HttpConfig:
+        Endpoint: !Sub "https://bedrock-runtime.${AWS::Region}.amazonaws.com/"
+        AuthorizationConfig:
+          AuthorizationType: AWS_IAM
+          AwsIamConfig:
+            SigningRegion: !Ref AWS::Region
+            SigningServiceName: bedrock
+
+  BedrockDataSourceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: appsync.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BedrockPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: Allow
+                  Action:
+                    - bedrock:InvokeModel
+                  Resource:
+                    - '*'
+
+  SecretsManagerDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt ComputelessRagApi.ApiId
+      Name: SecretsManagerDataSource
+      Type: HTTP
+      ServiceRoleArn: !GetAtt SecretsManagerDataSourceRole.Arn
+      HttpConfig:
+        Endpoint: !Sub "https://secretsmanager.${AWS::Region}.amazonaws.com"
+        AuthorizationConfig:
+          AuthorizationType: AWS_IAM
+          AwsIamConfig:
+            SigningRegion: !Ref AWS::Region
+            SigningServiceName: secretsmanager
+
+  SecretsManagerDataSourceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: appsync.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BedrockPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: Allow
+                  Action:
+                    - secretsmanager:GetSecretValue
+                  Resource:
+                    - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:pineconeApiKey*"
+
+  PineconeDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt ComputelessRagApi.ApiId
+      Name: PineconeDataSource
+      Type: HTTP
+      ServiceRoleArn: !GetAtt BedrockDataSourceRole.Arn
+      HttpConfig:
+        Endpoint: https://openai-bedrock-ca1c989.svc.gcp-starter.pinecone.io
