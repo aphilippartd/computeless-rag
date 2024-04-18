@@ -161,4 +161,4 @@ Resources:
       Type: HTTP
       ServiceRoleArn: !GetAtt BedrockDataSourceRole.Arn
       HttpConfig:
-        Endpoint: https://openai-bedrock-ca1c989.svc.gcp-starter.pinecone.io
+        Endpoint: YOUR_PINECONE_INDEX_HOST
