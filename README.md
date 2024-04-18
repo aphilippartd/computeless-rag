@@ -302,13 +302,11 @@ The template.yaml file defines the resources necessary for deploying the Compute
 The schema.graphql file defines the GraphQL schema used by the AppSync API. Here’s the structure:
 
 ```graphql
-type QueryOutput {
-  output: String!
-}
+type QueryOutput { output: String! }
+type Query { rag(query: String!): QueryOutput }
 
-type Query {
-  rag(query: String!): QueryOutput
-}
+type MutationOutput { output: Boolean! }
+type Mutation { embedContext(query: String!): MutationOutput }
 ```
 
 This schema sets up a simple API with a single type of query (rag) that accepts a string and returns a QueryOutput type, which contains a string field output. This setup is designed to handle the Q&A functionality of your tool, allowing users to submit queries and receive text responses.
