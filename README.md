@@ -42,7 +42,7 @@ The integration of these technologies is orchestrated through several steps:
 Let's now break down the architecture and workflow of the Computeless RAG tool, providing a detailed look at how each component interacts.
 
 ### 3.1 Architectural Overview
-[Placeholder for Architecture Diagram]
+![Architecture diagram](images/architecture.png)
 
 The architecture diagram above shows the orchestration of services and data flow in our tool. The basic idea is that for each GraphQL query or mutation coming in on our AppSync API, a JavaScript pipeline resolver will be trigger. Each resolver will run a set of functions in sequence to interact with services, data source or to manipulate data for the next subsequent step.
 
