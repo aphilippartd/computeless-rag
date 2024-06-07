@@ -1,19 +1,23 @@
 # The Computeless RAG Tool ⭐️
-Hey folks! I’m excited to share a project I’ve been working on that combines the powers of serverless architecture and generative AI to create something I like to call the Computeless RAG tool. This tool taps into private data (like your company's internal databases) and leverages GenAI without requiring any traditional AWS compute resources. It's all about making the Q&A process more efficient, and I think you’ll find the tech behind it pretty cool. So, let’s dive into how I built this Q&A tool.
+
+Hey folks! I’m excited to share a project that combines serverless architecture and generative AI: the Computeless RAG tool. This tool taps into private data, like your company's internal databases, and leverages GenAI without requiring traditional AWS compute resources. It's designed to make the Q&A process more efficient. Let’s dive into how this tool is built.
 
 ## 1. What is the Computless RAG Tool 🤷🏽‍♂️ ?
 
-The Computeless RAG tool is a prime example of utilizing AWS AppSync not just for managing GraphQL APIs but as an orchestrator for a serverless GenAI-driven query tool. This setup bypasses traditional compute resources, showcasing an alternative approach to deploying a GenAI application.
+The Computeless RAG tool uses AWS AppSync to manage GenAI-driven queries without traditional compute resources. By leveraging AppSync's JavaScript resolvers for complex workflows, the architecture becomes simpler, faster, and more cost-effective.
 
-The main question I tried to address with this project was: Is it feasible to develop an effective GenAI-powered query tool solely using AWS AppSync and other serverless components? The answer lies in utilizing AppSync's JavaScript resolvers to manage complex workflows directly, which simplifies the architecture while enhancing response times and cost-effectiveness.
+Key components include:
+- **Amazon Bedrock** for foundational models.
+- **Pinecone** as the vector database.
+- **AppSync JS resolvers** as the orchestrator.
 
-This project leverages Amazon Bedrock for accessing foundational models in a serverless manner, Pinecone as the vector database, and AppSync JS resolvers as the orchestrator. This integration demonstrates how AppSync can transcend its usual role, acting as the backbone of a peculiar serverless GenAI system.
+This integration demonstrates AppSync's potential to serve as the backbone of a serverless GenAI system.
 
 ## 2. Technological Overview 🛠️
-Let's dive into the key technologies behind the Computeless RAG tool, explaining how each component plays a role in our workflow:
+Let's explore the key technologies behind the Computeless RAG tool and their roles in the workflow:
 
 ### 2.1 AWS AppSync
-AWS AppSync is the central orchestrator for our project by leveraging JavaScript pipeline resolvers. This allows us to efficiently manage the sequence and context of data and requests throughout the query and response process.
+AWS AppSync serves as the central orchestrator, leveraging JavaScript pipeline resolvers to efficiently manage data sequence and context throughout the query and response process.
 
 ### 2.2 AWS Secrets Manager
 AWS Secrets Manager is used to secure sensitive credentials like the Pinecone API key, crucial for interfacing with our vector database.
@@ -44,22 +48,23 @@ Let's now break down the architecture and workflow of the Computeless RAG tool, 
 ### 3.1 Architectural Overview
 ![Architecture diagram](images/architecture.png)
 
-The architecture diagram above shows the orchestration of services and data flow in our tool. The basic idea is that for each GraphQL query or mutation coming in on our AppSync API, a JavaScript pipeline resolver will be trigger. Each resolver will run a set of functions in sequence to interact with services, data source or to manipulate data for the next subsequent step.
+The architecture diagram illustrates the orchestration of services and data flow in our tool. Each GraphQL query or mutation to our AppSync API triggers a JavaScript pipeline resolver. This resolver runs a sequence of functions to interact with services, data sources, or manipulate data for the next step.
 
 ### 3.2 AppSync Pipeline Resolver Functions
-AWS AppSync supports a powerful feature called pipeline resolvers, which are essential for complex data operations requiring multiple steps. These resolvers allow you to define a series of function calls that are executed in a defined sequence, with each function able to transform the output and pass it to the next. This sequential data handling capability is particularly advantageous for workflows where data needs to be fetched, transformed, and used to generate responses — exactly what our Computeless RAG tool does.
+AWS AppSync's pipeline resolvers are vital for complex data operations that require multiple steps. They enable you to define a sequence of function calls, each transforming the output and passing it to the next. This is ideal for workflows where data needs to be fetched, transformed, and used to generate responses, just like our Computeless RAG tool.
 
 **Why Use Pipeline Resolvers?**
-1. Sequential Logic Execution: Pipeline resolvers execute a sequence of operations that depend on the output of the previous step, making them ideal for our use case where each step logically follows from the last.
 
-2. Decoupling Logic and Data Sources: Each function in a pipeline can use different data sources or none at all. This flexibility allows for a cleaner architecture where data retrieval, processing, and response generation are clearly separated.
+1. **Sequential Logic Execution**: Pipeline resolvers execute operations in sequence, where each step depends on the previous one, making them perfect for our use case.
 
-3. Efficiency and Performance: By managing the flow of data within AppSync, we minimize the need for external orchestration and reduce the latency associated with multiple network calls.
+2. **Decoupling Logic and Data Sources**: Each function in the pipeline can use different data sources or none at all, creating a cleaner architecture by separating data retrieval, processing, and response generation.
 
-The logical progression through the pipeline is managed by individual JS files, each representing a function within our AppSync resolver. These functions are organized in the `api/resolvers/functions` folder within our SAM project, providing a clear and manageable structure for deployment and updates. Here’s how each function ties into the pipeline:
+3. **Efficiency and Performance**: By handling data flow within AppSync, we reduce the need for external orchestration and cut down on latency from multiple network calls.
+
+Each function in the pipeline is managed by individual JS files located in the `api/resolvers/functions` folder of our SAM project. This organization makes deployment and updates clear and manageable. Here’s how each function integrates into the pipeline:
 
 #### 3.2.1 Get Pinecone API Key Function (`getPineconeApiKeyFunction.js`)
-This function kicks off the pipeline by securely retrieving the Pinecone API key from AWS Secrets Manager using an HTTP data source. Once retrieved, it stores the key in `ctx.stash` making it available to subsequent functions.
+This function initiates the pipeline by securely retrieving the Pinecone API key from AWS Secrets Manager using an HTTP data source. The key is stored in `ctx.stash`, making it accessible to subsequent functions.
 
 ```javascript
 import { util } from '@aws-appsync/utils'
@@ -90,7 +95,7 @@ export function response(ctx) {
 ```
 
 #### 3.2.2 Generate Embedding Function (`generateEmbeddingFunction.js`)
-After securing the API key, this function generates vector embeddings from the user's query. It uses an HTTP data source to send the query to Amazon Bedrock, which utilizes the Titan Text Embeddings foundational model to transform the query into into vector embeddings. This embedding process is essential for accurately matching the query with relevant data in Pinecone.
+With the API key secured, this function generates vector embeddings from the user's query. It uses an HTTP data source to send the query to Amazon Bedrock, which leverages the Titan Text Embeddings model to transform the query into vector embeddings. This step is crucial for accurately matching the query with relevant data in Pinecone.
 
 ```javascript
 import { util } from '@aws-appsync/utils'
@@ -121,7 +126,7 @@ export function response(ctx) {
 ```
 
 #### 3.2.3 Store Embedding Function (`storeEmbeddingFunction.js`)
-With an embedding in hand, this function stores private data in the Pinecone database to be queried later on. It uses an HTTP data source to perform this action.
+With the embedding ready, this function stores the data in the Pinecone database for future queries. It uses an HTTP data source to execute this operation.
 
 ```javascript
 import { util } from '@aws-appsync/utils'
@@ -156,7 +161,7 @@ export function response(ctx) {
 ```
 
 #### 3.2.4 Search Embeddings Function (`searchEmbeddingsFunction.js`)
-With an embedding in hand, this function searches the Pinecone database to find the most relevant entries. It uses an HTTP data source to perform this query, fetching data that closely matches the user’s initial inquiry based on the embeddings generated previously.
+With the embedding ready, this function searches the Pinecone database for the most relevant entries. It uses an HTTP data source to perform the query, retrieving data that closely matches the user's initial inquiry based on the previously generated embeddings.
 
 ```javascript
 import { util } from '@aws-appsync/utils'
@@ -189,7 +194,7 @@ export function response(ctx) {
 ```
 
 #### 3.2.5 Build Prompt Function (`buildPromptFunction.js`)
-This function does not interact with any data sources and serves to assemble the final prompt. It constructs a comprehensive input for the AI model by combining the initial query, contextual data from Pinecone, and specific instructions for the language model. This step is vital for ensuring that the AI model generates relevant and accurate responses.
+This function does not interact with any data sources and is responsible for assembling the final prompt. It combines the initial query, contextual data from Pinecone, and specific instructions for the language model to create a comprehensive input. This step is crucial for ensuring that the AI model generates relevant and accurate responses.
 
 ```javascript
 export function request(ctx) { return {} }
@@ -213,7 +218,7 @@ export function response(ctx) {
 ```
 
 #### 3.2.6 Invoke Model Function (`invokeModelFunction.js`)
-The final function in the pipeline uses an HTTP data source to send the assembled prompt to Anthropic’s Claude 3 Haiku model via Amazon Bedrock. This function is responsible for obtaining the final answer to the user’s query, showcasing the GenAI’s capability to process and respond to complex inquiries effectively.
+The final function in the pipeline sends the assembled prompt to Anthropic’s Claude 3 Haiku model via Amazon Bedrock using an HTTP data source. This function obtains the final answer to the user’s query, demonstrating the GenAI’s ability to process and respond to complex inquiries effectively.
 
 ```javascript
 import { util } from '@aws-appsync/utils'
@@ -259,18 +264,19 @@ export function response(ctx) {
 
 #### 3.3.1 `embedContext` Mutation
 
-The `embedContext` mutation within our AppSync architecture plays as essential role in enriching our Pinecone database with actionable data. Specifically, this mutation addresses the need to continuously augment our database with private data that can later be queried effectively. When text data is submitted through this mutation, it is first converted into embeddings, preparing it for efficient and relevant retrieval.
+The `embedContext` mutation in our AppSync architecture is crucial for enriching our Pinecone database with actionable data. This mutation continuously augments our database with private data that can be effectively queried later. When text data is submitted, it is first converted into embeddings for efficient and relevant retrieval.
 
-The mutation will trigger a pipeline resolver composed out of the following functions in sequence:
-  - getPineconeApiKeyFunction
-  - generateEmbeddingFunction
-  - storeEmbeddingFunction
+The mutation triggers a pipeline resolver composed of the following functions in sequence:
+
+- `getPineconeApiKeyFunction`
+- `generateEmbeddingFunction`
+- `storeEmbeddingFunction`
 
 #### 3.3.2 `rag` Query
 
-The `rag` Query in our AppSync setup is the central functionality of the Computeless RAG tool, aiming to retrieve and generate responses based on user queries. This GraphQL query taps into our Pinecone database to deliver relevant answers based on private data.
+The `rag` Query in our AppSync setup is the core functionality of the Computeless RAG tool, designed to retrieve and generate responses based on user queries. This GraphQL query leverages our Pinecone database to provide relevant answers based on private data.
 
-The query will trigger a pipeline resolver composed out of the following functions in sequence:
+The query triggers a pipeline resolver composed of the following functions in sequence:
   - getPineconeApiKeyFunction
   - generateEmbeddingFunction
   - searchEmbeddingsFunction
@@ -278,24 +284,14 @@ The query will trigger a pipeline resolver composed out of the following functio
   - invokeModelFunction
 
 ## 4. SAM Project Structure 📝
-The AWS Serverless Application Model (SAM) is an open-source framework that simplifies creating and deploying serverless applications on AWS. In our Computeless RAG tool project, the SAM template (template.yaml) and the GraphQL schema (schema.graphql) are key components that define the infrastructure and the API interface respectively.
+The AWS Serverless Application Model (SAM) simplifies creating and deploying serverless applications on AWS. In our Computeless RAG tool project, the SAM template (`template.yaml`) and the GraphQL schema (`schema.graphql`) are key components defining the infrastructure and API interface.
 
 ### 4.1 Overview of template.yaml
 The template.yaml file defines the resources necessary for deploying the Computeless RAG tool on AWS. Here’s a breakdown of the primary components:
 
 - **AWS::Serverless::GraphQLApi**: This resource creates the AppSync API. It uses the GraphQL schema provided in the schema.graphql file. The API is configured with API keys for authentication and connected to various data sources and resolvers for handling operations.
 
-- **Functions**: Functions are defined for each step in the AppSync pipeline resolver, mapped to specific JavaScript files:
-  - **getPineconeApiKeyFunction**: Retrieves the API key from AWS Secrets Manager.
-  - **generateEmbeddingFunction**: Uses Amazon Bedrock to generate embeddings from the user's query.
-  - **searchEmbeddingsFunction**: Queries the Pinecone database for relevant data.
-  - **buildPromptFunction**: Assembles the prompt for the AI model without using a data source.
-  - **invokeModelFunction**: Calls the AI model to generate the final response.
-- **AWS::AppSync::DataSource**: Data sources are specified for connecting the functions to external services:
-
-  1. **SecretsManagerDataSource**: Configured to interact with AWS Secrets Manager using HTTP. It's linked to an IAM role that allows it to fetch the API key.
-  2. **PineconeDataSource**  
-  3. **BedrockDataSource**: HTTP data sources configured to interact with Pinecone and Amazon Bedrock services.
+- **Functions**: Functions are defined for each step in the AppSync pipeline resolver, mapped to specific JavaScript files. Those functions have been covered in the **AppSync Pipeline Resolver Functions** section above.
 - **AWS::IAM::Role**: Defines the roles required for the AppSync data sources to interact with AWS services securely. Each role includes policies that grant necessary permissions for actions like retrieving secrets or invoking AI models.
 
 ### 4.2 Understanding schema.graphql
@@ -309,7 +305,7 @@ type MutationOutput { output: Boolean! }
 type Mutation { embedContext(query: String!): MutationOutput }
 ```
 
-This schema sets up a simple API with a single type of query (rag) that accepts a string and returns a QueryOutput type, which contains a string field output. This setup is designed to handle the Q&A functionality of your tool, allowing users to submit queries and receive text responses.
+This schema sets up a simple API with a single type of query (rag) that accepts a string and returns a QueryOutput type containing a string field output. This setup handles the Q&A functionality of the tool, allowing users to submit queries and receive text responses.
 
 ### 4.3 The AppSync resolver functions folder
 
@@ -317,7 +313,7 @@ As mentioned in section 3, the `api/resolvers/functions` folder contains the js 
 
 ### 4.4 Deploying the SAM project
 
-Deploying this SAM project involves several steps that are streamlined by the SAM CLI, a command line tool that allows you to build, test, and deploy AWS serverless applications using SAM templates. Here’s how to deploy our project:
+Deploying this SAM project involves several steps streamlined by the SAM CLI, a command-line tool that allows you to build, test, and deploy AWS serverless applications using SAM templates. Here’s how to deploy our project:
 
 **Pre-Requisites:**
 
@@ -402,7 +398,7 @@ In order to test our tool, we need to populate some data in our Pinecone databas
 
 ### 5.2 Asking questions
 
-Now that we have "private" data stored in our Pinecone index, we are able to query our tool.
+With "private" data stored in our Pinecone index, we can now query our tool.
 
 1. Navigate to the AWS AppSync console
 2. Select the API you just deployed.
@@ -430,15 +426,27 @@ In order to remove the AWS resources created in this tutorial, just run the foll
 
 ## 6. Conclusion 🌅
    
-The journey through the development of the Computeless RAG tool has showcased how seamlessly serverless architectures can integrate with generative AI to handle complex queries directly from private datasets by leveraging AWS AppSync, Amazon Bedrock and Pinecone.
+Developing the Computeless RAG tool has showcased how seamlessly serverless architectures can integrate with generative AI to handle complex queries from private datasets, leveraging AWS AppSync, Amazon Bedrock, and Pinecone.
 
-Further potential improvements and considerations to the Computeless RAG Tool are:
+### Potential Improvements:
 
-- **Amazon Cognito** could be used to authenticate users and authorize them to only access data of companies they belong to. Cognito seamlessly integrates with AWS AppSync.
-- Each request on our API involves fetching secrets from **AWS Secrets Manager** through the `getPineconeApiKeyFunction`. This has 2 downsides:
+- **Amazon Cognito**: Use for user authentication and authorization, allowing access only to data from their respective companies. Cognito integrates seamlessly with AWS AppSync.
+- **AWS Secrets Manager**: Each API request fetches secrets, which has two downsides:
+  1. Costs for secret retrieval with each request, balanced by savings from not using compute resources like Lambda functions.
+  2. Secrets may appear in plaintext in CloudWatch logs when logging is enabled, exposing the Pinecone API key. [Amazon CloudWatch Logs data protection](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/mask-sensitive-log-data.html) can mitigate this.
+- **Data Ingestion with Bedrock Knowledge Bases**: For the data ingestion part in the vector datastore, using Bedrock Knowledge Bases could be an effective option.
+- **Date Retrieval with Bedrock Knowledge Bases**: Instead of manually embedding the user query and making the vector search on Pinecone, using the Retrieve API for Amazon Bedrock Knowledge Bases can be an "AWS managed" way of doing things. This approach combines the functionalities of the `generateEmbeddingFunction` and `searchEmbeddingsFunction` into a single function, streamlining the process and leveraging AWS-managed services.
 
-  1. Paying for secret retrieval everytime a request comes in. This has to balanced out with the fact that you are not paying for compute resources (eg: Lambda functions (invocation and ms of run time))
-  2. When logging is enabled on your AppSync API, the secret is printed in plaintext. Anyone having access to your Cloudwatch logs, would have access to your Pinecone API key. [Amazon Cloudwatch Logs data protection](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/mask-sensitive-log-data.html) can however help in solving this issue.
+### Additional Considerations
 
+I acknowledge that other solutions are possible, and my point here is to present AppSync as one of the options among many, offering the luxury of choice.
 
-Thank you for joining me on this exploration of the Computeless RAG Tool concept! I hope you had as much fun reading this as I had building the tool. You can find the code in the [following repo](https://github.com/aphilippartd/computeless-rag).
+- **Step Functions**: Step Functions can also avoid compute and orchestrate your RAG pipeline, but with a different cost structure. You pay for executions and GB-seconds, which can add up depending on your use case. Compute time adds to the overall cost and network hops can introduce some additional latency.
+- **Lambda with Bedrock**: Using AWS Lambda functions with Amazon Bedrock can handle complex queries and integrate with various data sources. This approach involves costs associated with Lambda invocations and execution time, potentially adding latency.
+- **Lambda with Bedrock Knowledge Bases**: Combining Lambda with Bedrock Knowledge Bases enhances capabilities by providing managed knowledge bases. This approach also involves costs associated with Lambda invocations and execution time, potentially adding latency.
+
+Regardless of the chosen method, using Bedrock incurs a cost. The key difference is that with Lambda or Step Functions, compute time is an additional cost. The advantage of AppSync for this use-case is that it offers 30 seconds of "free" compute time to connect to data sources and execute the linear RAG logic, potentially offering cost savings compared to other options.
+
+In summary, I am not trying to convince that AppSync is the go-to solution for all cases. Rather, I aim to share that AppSync is a lesser-known yet viable option for building serverless, GenAI-driven applications. This adds to the range of choices available to developers, enabling them to select the best tool for their specific needs.
+
+Thank you for joining me on this exploration of the Computeless RAG Tool! I hope you enjoyed reading this as much as I enjoyed building it. Find the code in the [following repo](https://github.com/aphilippartd/computeless-rag).
