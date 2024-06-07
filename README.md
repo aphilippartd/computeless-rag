@@ -277,11 +277,11 @@ The mutation triggers a pipeline resolver composed of the following functions in
 The `rag` Query in our AppSync setup is the core functionality of the Computeless RAG tool, designed to retrieve and generate responses based on user queries. This GraphQL query leverages our Pinecone database to provide relevant answers based on private data.
 
 The query triggers a pipeline resolver composed of the following functions in sequence:
-  - getPineconeApiKeyFunction
-  - generateEmbeddingFunction
-  - searchEmbeddingsFunction
-  - buildPromptFunction
-  - invokeModelFunction
+  - `getPineconeApiKeyFunction`
+  - `generateEmbeddingFunction`
+  - `searchEmbeddingsFunction`
+  - `buildPromptFunction`
+  - `invokeModelFunction`
 
 ## 4. SAM Project Structure 📝
 The AWS Serverless Application Model (SAM) simplifies creating and deploying serverless applications on AWS. In our Computeless RAG tool project, the SAM template (`template.yaml`) and the GraphQL schema (`schema.graphql`) are key components defining the infrastructure and API interface.
